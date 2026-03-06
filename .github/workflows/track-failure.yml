@@ -1,0 +1,457 @@
+name: Change Failure Rate Tracker
+
+on:
+  pull_request:
+    types: [closed]
+  issues:
+    types: [opened]
+  workflow_run:
+    workflows: ['Deployment Frequency Tracker']
+    types: [completed]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 10 * * 1'
+
+jobs:
+  track-failures:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Track Failed Changes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const metricsDir = '.github/metrics';
+            const changeFile = path.join(metricsDir, 'changes.json');
+            const failureFile = path.join(metricsDir, 'change-failures.json');
+            
+            if (!fs.existsSync(metricsDir)) {
+              fs.mkdirSync(metricsDir, { recursive: true });
+            }
+            
+            let changes = [];
+            if (fs.existsSync(changeFile)) {
+              try {
+                changes = JSON.parse(fs.readFileSync(changeFile, 'utf8'));
+              } catch (e) {
+                console.log('Starting fresh change tracking');
+                changes = [];
+              }
+            }
+            
+            const timestamp = new Date().toISOString();
+            const eventName = context.eventName;
+            
+            // PR 병합 이벤트 처리
+            if (context.payload.pull_request) {
+              const pr = context.payload.pull_request;
+              const action = context.payload.action;
+              
+              if (action === 'closed' && pr.merged) {
+                console.log('PR merged: #' + pr.number);
+                
+                changes.push({
+                  id: pr.id,
+                  pr_number: pr.number,
+                  title: pr.title,
+                  author: pr.user.login,
+                  deployed_at: timestamp,
+                  commit_sha: pr.merge_commit_sha,
+                  branch: pr.head.ref,
+                  status: 'deployed',
+                  is_failed: false,
+                  failure_reason: null,
+                  rollback_at: null,
+                  time_to_failure_minutes: null
+                });
+                
+                console.log('Change tracked: PR #' + pr.number);
+              }
+            }
+            
+            // 이슈 생성 이벤트 처리 (버그 리포트)
+            if (context.payload.issue) {
+              const issue = context.payload.issue;
+              const action = context.payload.action;
+              
+              if (action === 'opened') {
+                const bugLabel = issue.labels.some(l => l.name === 'bug' || l.name === 'critical');
+                
+                if (bugLabel) {
+                  console.log('Bug issue created: #' + issue.number);
+                  
+                  // 최근 배포된 변경사항과 연결
+                  const recentDeployed = changes.filter(c => c.status === 'deployed').slice(-1);
+                  
+                  if (recentDeployed.length > 0) {
+                    const lastChange = recentDeployed[0];
+                    const deployTime = new Date(lastChange.deployed_at).getTime();
+                    const issueTime = new Date(issue.created_at).getTime();
+                    const timeToFailureMin = Math.round((issueTime - deployTime) / (1000 * 60));
+                    
+                    if (timeToFailureMin >= 0 && timeToFailureMin <= 1440) {
+                      lastChange.is_failed = true;
+                      lastChange.status = 'failed';
+                      lastChange.failure_reason = issue.title;
+                      lastChange.failure_issue_number = issue.number;
+                      lastChange.time_to_failure_minutes = timeToFailureMin;
+                      
+                      console.log('Failure detected in PR #' + lastChange.pr_number);
+                    }
+                  }
+                }
+              }
+            }
+            
+            // 데이터 저장
+            fs.writeFileSync(changeFile, JSON.stringify(changes, null, 2));
+            console.log('Changes tracked: ' + changes.length);
+
+      - name: Track Rollbacks
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const changeFile = path.join('.github/metrics', 'changes.json');
+            
+            if (!fs.existsSync(changeFile)) {
+              return;
+            }
+            
+            const changes = JSON.parse(fs.readFileSync(changeFile, 'utf8'));
+            
+            // 롤백 PR 찾기 (제목에 'revert' 포함)
+            const pattern = /revert|rollback|hotfix/i;
+            
+            if (context.payload.pull_request && context.payload.action === 'closed' && context.payload.pull_request.merged) {
+              const pr = context.payload.pull_request;
+              
+              if (pattern.test(pr.title)) {
+                console.log('Rollback PR detected: #' + pr.number);
+                
+                // 관련된 커밋/PR 찾기
+                const body = pr.body || '';
+                const prMatches = body.match(/#(\d+)/g);
+                
+                if (prMatches) {
+                  prMatches.forEach(match => {
+                    const relatedPrNumber = parseInt(match.substring(1));
+                    const relatedChange = changes.find(c => c.pr_number === relatedPrNumber);
+                    
+                    if (relatedChange && relatedChange.status === 'failed') {
+                      relatedChange.status = 'rolled_back';
+                      relatedChange.rollback_at = new Date().toISOString();
+                      relatedChange.rollback_pr_number = pr.number;
+                      
+                      console.log('Rollback recorded for PR #' + relatedPrNumber);
+                    }
+                  });
+                }
+                
+                fs.writeFileSync(changeFile, JSON.stringify(changes, null, 2));
+              }
+            }
+
+      - name: Calculate Change Failure Rate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const changeFile = path.join('.github/metrics', 'changes.json');
+            const cfrFile = path.join('.github/metrics', 'change-failure-rate.json');
+            
+            if (!fs.existsSync(changeFile)) {
+              console.log('No change data');
+              return;
+            }
+            
+            const changes = JSON.parse(fs.readFileSync(changeFile, 'utf8'));
+            
+            if (changes.length === 0) {
+              console.log('No changes tracked');
+              return;
+            }
+            
+            // 최근 30일 데이터
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            
+            const recentChanges = changes.filter(c => 
+              new Date(c.deployed_at) >= thirtyDaysAgo
+            );
+            
+            if (recentChanges.length === 0) {
+              console.log('No recent changes');
+              return;
+            }
+            
+            // 실패율 계산
+            const totalChanges = recentChanges.length;
+            const failedChanges = recentChanges.filter(c => c.is_failed).length;
+            const rolledBackChanges = recentChanges.filter(c => c.status === 'rolled_back').length;
+            const successfulChanges = recentChanges.filter(c => c.status === 'deployed' && !c.is_failed).length;
+            
+            const failureRate = (failedChanges / totalChanges) * 100;
+            const rollbackRate = (rolledBackChanges / totalChanges) * 100;
+            
+            // 상태별 분류
+            const byStatus = {};
+            recentChanges.forEach(c => {
+              const status = c.status || 'unknown';
+              byStatus[status] = (byStatus[status] || 0) + 1;
+            });
+            
+            // 평균 시간
+            const failureTimes = recentChanges
+              .filter(c => c.time_to_failure_minutes)
+              .map(c => c.time_to_failure_minutes);
+            
+            const avgTimeToFailure = failureTimes.length > 0
+              ? Math.round(failureTimes.reduce((a, b) => a + b, 0) / failureTimes.length)
+              : 0;
+            
+            // 관련자(Author)별 통계
+            const byAuthor = {};
+            recentChanges.forEach(c => {
+              const author = c.author || 'unknown';
+              if (!byAuthor[author]) {
+                byAuthor[author] = { total: 0, failed: 0 };
+              }
+              byAuthor[author].total++;
+              if (c.is_failed) {
+                byAuthor[author].failed++;
+              }
+            });
+            
+            const cfrAnalysis = {
+              timestamp: new Date().toISOString(),
+              period_days: 30,
+              metrics: {
+                total_changes: totalChanges,
+                failed_changes: failedChanges,
+                rolled_back_changes: rolledBackChanges,
+                successful_changes: successfulChanges,
+                failure_rate_percent: failureRate.toFixed(2),
+                rollback_rate_percent: rollbackRate.toFixed(2),
+                avg_time_to_failure_minutes: avgTimeToFailure
+              },
+              by_status: byStatus,
+              by_author: byAuthor,
+              trend: failureRate > 20 ? 'increasing' : failureRate < 5 ? 'excellent' : 'acceptable'
+            };
+            
+            fs.writeFileSync(cfrFile, JSON.stringify(cfrAnalysis, null, 2));
+            
+            console.log('CFR calculated: ' + cfrAnalysis.metrics.failure_rate_percent + '%');
+
+      - name: Analyze Failure Patterns
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const changeFile = path.join('.github/metrics', 'changes.json');
+            const patternsFile = path.join('.github/metrics', 'failure-patterns.json');
+            
+            if (!fs.existsSync(changeFile)) {
+              return;
+            }
+            
+            const changes = JSON.parse(fs.readFileSync(changeFile, 'utf8'));
+            const failedChanges = changes.filter(c => c.is_failed);
+            
+            if (failedChanges.length === 0) {
+              console.log('No failure patterns');
+              return;
+            }
+            
+            // 실패 이유 분류
+            const failureReasons = {};
+            failedChanges.forEach(c => {
+              const reason = c.failure_reason || 'Unknown';
+              failureReasons[reason] = (failureReasons[reason] || 0) + 1;
+            });
+            
+            // 시간대별 장애
+            const failuresByHour = {};
+            failedChanges.forEach(c => {
+              const hour = new Date(c.deployed_at).getHours();
+              failuresByHour[hour] = (failuresByHour[hour] || 0) + 1;
+            });
+            
+            // 요일별 장애
+            const failuresByDay = {
+              'Sunday': 0, 'Monday': 0, 'Tuesday': 0, 'Wednesday': 0,
+              'Thursday': 0, 'Friday': 0, 'Saturday': 0
+            };
+            
+            failedChanges.forEach(c => {
+              const dayOfWeek = new Date(c.deployed_at).getDay();
+              const dayName = Object.keys(failuresByDay)[dayOfWeek];
+              failuresByDay[dayName]++;
+            });
+            
+            const patterns = {
+              timestamp: new Date().toISOString(),
+              total_failures: failedChanges.length,
+              failure_reasons: failureReasons,
+              by_hour: failuresByHour,
+              by_day_of_week: failuresByDay,
+              common_issue: Object.entries(failureReasons)
+                .sort((a, b) => b[1] - a[1])[0]
+            };
+            
+            fs.writeFileSync(patternsFile, JSON.stringify(patterns, null, 2));
+            
+            console.log('Failure patterns analyzed');
+
+      - name: Generate CFR Report
+        if: github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const cfrFile = path.join('.github/metrics', 'change-failure-rate.json');
+            const patternsFile = path.join('.github/metrics', 'failure-patterns.json');
+            const reportFile = path.join('.github/metrics', 'change-failure-report.md');
+            
+            if (!fs.existsSync(cfrFile)) {
+              console.log('No CFR data');
+              return;
+            }
+            
+            const cfr = JSON.parse(fs.readFileSync(cfrFile, 'utf8'));
+            let patterns = null;
+            
+            if (fs.existsSync(patternsFile)) {
+              patterns = JSON.parse(fs.readFileSync(patternsFile, 'utf8'));
+            }
+            
+            let report = '# Change Failure Rate Report - Weekly\n\n';
+            report += '**Generated**: ' + new Date().toISOString() + '\n';
+            report += '**Period**: Last ' + cfr.period_days + ' Days\n\n';
+            
+            report += '## Key Metrics\n\n';
+            report += '| Metric | Value |\n';
+            report += '|--------|-------|\n';
+            report += '| Change Failure Rate | ' + cfr.metrics.failure_rate_percent + '% |\n';
+            report += '| Rollback Rate | ' + cfr.metrics.rollback_rate_percent + '% |\n';
+            report += '| Total Changes | ' + cfr.metrics.total_changes + ' |\n';
+            report += '| Failed Changes | ' + cfr.metrics.failed_changes + ' |\n';
+            report += '| Successful | ' + cfr.metrics.successful_changes + ' |\n';
+            report += '| Avg Time to Failure | ' + cfr.metrics.avg_time_to_failure_minutes + ' min |\n\n';
+            
+            report += '## Status Distribution\n\n';
+            for (const status in cfr.by_status) {
+              report += '- ' + status + ': ' + cfr.by_status[status] + '\n';
+            }
+            report += '\n';
+            
+            report += '## Quality Assessment\n\n';
+            report += '- **Trend**: ' + cfr.trend + '\n';
+            report += '- **Status**: ' + (cfr.metrics.failure_rate_percent < 15 ? 'Acceptable' : 'Needs Improvement') + '\n\n';
+            
+            if (patterns && patterns.failure_reasons) {
+              report += '## Common Failure Reasons\n\n';
+              Object.entries(patterns.failure_reasons)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .forEach(([reason, count]) => {
+                  report += '- ' + reason + ': ' + count + ' times\n';
+                });
+              report += '\n';
+            }
+            
+            if (cfr.by_author) {
+              report += '## By Author\n\n';
+              report += '| Author | Changes | Failed | Rate |\n';
+              report += '|--------|---------|--------|------|\n';
+              
+              Object.entries(cfr.by_author)
+                .sort((a, b) => b[1].failed - a[1].failed)
+                .forEach(([author, stats]) => {
+                  const rate = stats.total > 0 ? Math.round((stats.failed / stats.total) * 100) : 0;
+                  report += '| ' + author + ' | ' + stats.total + ' | ' + stats.failed + ' | ' + rate + '% |\n';
+                });
+              report += '\n';
+            }
+            
+            report += '---\n*DORA Metrics: Change Failure Rate*\n';
+            report += '*This metric represents the percentage of deployments causing failures requiring remediation.*\n';
+            
+            fs.writeFileSync(reportFile, report);
+            
+            console.log('CFR Report generated');
+
+      - name: Alert on High Failure Rate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const cfrFile = path.join('.github/metrics', 'change-failure-rate.json');
+            
+            if (!fs.existsSync(cfrFile)) {
+              return;
+            }
+            
+            const cfr = JSON.parse(fs.readFileSync(cfrFile, 'utf8'));
+            const failureRate = parseFloat(cfr.metrics.failure_rate_percent);
+            
+            if (failureRate > 30) {
+              let alertBody = '## Warning: High Change Failure Rate\n\n';
+              alertBody += '**Current CFR**: ' + failureRate + '%\n';
+              alertBody += '**Threshold**: 30%\n\n';
+              alertBody += '### Details\n';
+              alertBody += '- Total Changes: ' + cfr.metrics.total_changes + '\n';
+              alertBody += '- Failed Changes: ' + cfr.metrics.failed_changes + '\n';
+              alertBody += '- Rollback Rate: ' + cfr.metrics.rollback_rate_percent + '%\n\n';
+              alertBody += '### Recommended Actions\n';
+              alertBody += '- Review recent failed deployments\n';
+              alertBody += '- Analyze failure patterns\n';
+              alertBody += '- Implement additional testing\n';
+              alertBody += '- Consider deployment rollback procedures\n';
+              
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '[Alert] High Change Failure Rate: ' + failureRate.toFixed(1) + '%',
+                body: alertBody,
+                labels: ['alert', 'quality']
+              });
+              
+              console.log('High CFR alert created');
+            }
+
+      - name: Commit metrics
+        if: always()
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          if [ -d ".github/metrics" ]; then
+            git add .github/metrics/change* || true
+            git add .github/metrics/failure* || true
+            git diff --quiet && git diff --staged --quiet || git commit -m "chore: Update change failure rate metrics" || true
+            git push origin main || true
+          fi
+        shell: bash

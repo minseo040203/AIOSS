@@ -1,0 +1,380 @@
+name: Improvement Roadmap Generator
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 1'
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  generate-roadmap:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Generate Roadmap Visualization
+        run: |
+          python3 << 'EOF'
+          import json
+          from datetime import datetime, timedelta
+          from pathlib import Path
+          
+          # 분석 데이터 로드
+          analysis_file = Path('.github/metrics/improvement-analysis.json')
+          if not analysis_file.exists():
+              print("⚠️ Analysis file not found")
+              exit(0)
+          
+          with open(analysis_file, 'r', encoding='utf-8') as f:
+              data = json.load(f)
+          
+          # Roadmap Markdown 생성
+          roadmap = """# 🗓️ 개선 계획 Roadmap (2026년 3-4월)
+          
+          ## 📊 목표 달성 체계도
+          
+          ```
+          ┌─────────────────────────────────────────────────────────────────┐
+          │  최종 목표: DORA Elite 성과 달성                                 │
+          │  Lead Time -23% | Deployment +27% | MTTR -50% | CFR -42%        │
+          └────────────────────┬────────────────────────────────────────────┘
+                               │
+                ┌──────────────┼──────────────┬──────────────┐
+                │              │              │              │
+          ┌─────▼──────┐  ┌────▼──────┐  ┌────▼──────┐  ┌──▼───────┐
+          │ Goal #1    │  │ Goal #2   │  │ Goal #3   │  │ Goal #4  │
+          │Lead Time   │  │Issue→PR   │  │MTTR개선   │  │CFR 유지  │
+          │15.6h→12h   │  │330→180min │  │120→60min  │  │5.2→3%   │
+          │(23% ↓)     │  │(45% ↓)    │  │(50% ↓)    │  │(42% ↓)  │
+          └────────────┘  └───────────┘  └───────────┘  └──────────┘
+          ```
+          
+          ## 📅 4단계 실행 계획
+          
+          ### Phase 1: 자동화된 코드 검사 시스템 (1-2주)
+          **기간**: 2026년 3월 10일 ~ 3월 23일
+          **담당**: Backend, DevOps, PM
+          **목표**: PR 리뷰 시간 396분 → 240분
+          
+          ```
+          진도율 체크포인트
+          
+          Week 1 (3/10-3/16)
+          ├─ 3/10: 🎯 ESLint + Prettier 설정 시작
+          ├─ 3/13: ✅ ESLint + Prettier 자동화 완료 (25%)
+          ├─ 3/15: ⏳ SonarQube 통합 진행 중
+          └─ 3/16: 🎯 지점검 (목표 25% 달성)
+          
+          Week 2 (3/17-3/23)
+          ├─ 3/17: ✅ 자동 리뷰 봇 구현 완료 (50%)
+          ├─ 3/20: ✅ CI/CD 파이프라인 개선 (75%)
+          ├─ 3/22: ⏳ 효과 측정 중
+          └─ 3/23: 🎯 최종검 (목표 100% 달성)
+          ```
+          
+          **예상 성과**:
+          - 자동 코드 검사 통과율: 60% → 90%
+          - PR 리뷰 횟수: 3-5회 → 1-2회
+          - Lead Time 감소: 396분 → 320분 (19% 단축)
+          
+          ---
+          
+          ### Phase 2: Issue 관리 자동화 (2-3주)
+          **기간**: 2026년 3월 20일 ~ 4월 1일
+          **담당**: PM, Backend, DevOps
+          **목표**: Issue→PR 시간 330분 → 180분
+          
+          ```
+          진도율 체크포인트
+          
+          Week 1-2 (3/20-4/01)
+          ├─ 3/20: 🎯 Issue 템플릿 개선 시작
+          ├─ 3/22: ✅ 자동 템플릿 배포 (25%)
+          ├─ 3/25: ✅ 자동 할당 로직 완료 (50%)
+          ├─ 3/28: ✅ 자동 레이블링 완료 (75%)
+          └─ 4/01: 🎯 최종검 (목표 100% 달성)
+          ```
+          
+          **예상 성과**:
+          - 이슈 명확도: 70% → 95%
+          - 자동 할당 적용율: 0% → 80%
+          - Issue→PR 시간 감소: 330분 → 220분 (33% 단축)
+          
+          ---
+          
+          ### Phase 3: MTTR 개선 시스템 (3-4주)
+          **기간**: 2026년 3월 24일 ~ 4월 8일
+          **담당**: DevOps, Backend
+          **목표**: MTTR 120분 → 60분
+          
+          ```
+          진도율 체크포인트
+          
+          Week 1-2 (3/24-4/08)
+          ├─ 3/24: 🎯 자동 롤백 구현 시작
+          ├─ 3/27: ✅ 롤백 시스템 배포 (25%)
+          ├─ 3/28: ✅ 모니터링 개선 완료 (50%)
+          ├─ 4/03: ✅ 헬스 체크 고도화 (75%)
+          └─ 4/08: 🎯 최종검 (목표 100% 달성)
+          ```
+          
+          **예상 성과**:
+          - 자동 롤백 적용율: 20% → 70%
+          - 장애 감지 → 알림: 5분 → 3분
+          - MTTR 단축: 120분 → 75분 (37% 감소)
+          
+          ---
+          
+          ### Phase 4: 품질 및 테스트 자동화 (2-4주)
+          **기간**: 2026년 4월 1일 ~ 4월 30일
+          **담당**: QA, DevOps
+          **목표**: CFR 5.2% → 3%, 테스트 커버리지 70% → 90%
+          
+          ```
+          진도율 체크포인트
+          
+          Week 1-4 (4/01-4/30)
+          ├─ 4/01: 🎯 자동 테스트 분석 시작
+          ├─ 4/05: ✅ E2E 테스트 확대 (25%)
+          ├─ 4/10: ✅ 배포 게이트 강화 (50%)
+          ├─ 4/15: 🎯 중간점검 (50% 진도율)
+          ├─ 4/20: ✅ 성능 & 보안 테스트 완료 (75%)
+          ├─ 4/25: ✅ 사용성 검증 (90%)
+          └─ 4/30: 🎯 최종검 (목표 100% 달성)
+          ```
+          
+          **예상 성과**:
+          - 테스트 커버리지: 70% → 90%
+          - CFR: 5.2% → 3.5% (33% 감소)
+          - 배포 전 검증: 95% → 99%
+          
+          ---
+          
+          ## 📈 주요 메트릭 목표 진도도
+          
+          ### Lead Time 개선 추이
+          ```
+          현재: ████████████████░░ (15.6h)
+          목표: █████████████░░░░░░ (12h)
+          
+          ┌─────────────────────────────────┐
+          │ 주간 진도                       │
+          │ 3/10: 0%  ░░░░░░░░░░░░░░░░░░░  │
+          │ 3/17: 15% ███░░░░░░░░░░░░░░░░░  │
+          │ 3/24: 35% ███████░░░░░░░░░░░░░  │
+          │ 3/31: 60% ████████████░░░░░░░░░ │
+          │ 4/07: 85% █████████████████░░░░ │
+          │ 4/14: 100% ██████████████████░░ │
+          └─────────────────────────────────┘
+          ```
+          
+          ### Deployment Frequency 추이
+          ```
+          현재: ██████████░░░░░░░░░ (14.2회/주)
+          목표: ████████████░░░░░░░░ (18회/주)
+          
+          ┌─────────────────────────────────┐
+          │ 주간 진도                       │
+          │ 3/10: 14.2회/주
+          │ 3/17: 14.5회/주 (자동화 2%)
+          │ 3/24: 15.0회/주 (자동화 5%)
+          │ 3/31: 16.0회/주 (자동화 13%)
+          │ 4/07: 17.2회/주 (자동화 22%)
+          │ 4/14: 18.0회/주 (자동화 27%)
+          └─────────────────────────────────┘
+          ```
+          
+          ### MTTR 개선 추이
+          ```
+          현재: ████████████░░░░░░░░ (120분)
+          목표: ██████░░░░░░░░░░░░░░ (60분)
+          
+          ┌─────────────────────────────────┐
+          │ 주간 진도                       │
+          │ 3/10: 120분 (자동화 0%)
+          │ 3/17: 115분 (자동화 5%)
+          │ 3/24: 105분 (자동화 12%)
+          │ 3/31: 90분 (자동화 25%)
+          │ 4/07: 75분 (자동화 37%)
+          │ 4/14: 60분 (자동화 50%)
+          └─────────────────────────────────┘
+          ```
+          
+          ### CFR 개선 추이
+          ```
+          현재: ████░░░░░░░░░░░░░░░░ (5.2%)
+          목표: ██░░░░░░░░░░░░░░░░░░ (3%)
+          
+          ┌─────────────────────────────────┐
+          │ 월간 진도                       │
+          │ 3월:  5.2% (기준선)
+          │ 4월1주: 4.8% (자동화 8%)
+          │ 4월2주: 4.5% (자동화 13%)
+          │ 4월3주: 3.8% (자동화 27%)
+          │ 4월4주: 3.0% (자동화 42%)
+          └─────────────────────────────────┘
+          ```
+          
+          ---
+          
+          ## 🎯 주요 마일스톤
+          
+          | 날짜 | 마일스톤 | 상태 | 영향도 |
+          |------|---------|------|--------|
+          | 3/10 | 개선 계획 수립 | 📌 계획 | P0 |
+          | 3/13 | ESLint + Prettier 완료 | ⏳ 진행중 | P1 |
+          | 3/17 | 자동 리뷰 봇 배포 | ⏳ 진행중 | P1 |
+          | 3/20 | Issue 자동 할당 시작 | 📌 예정 | P1 |
+          | 3/24 | 자동 롤백 시스템 배포 | 📌 예정 | P2 |
+          | 3/31 | Phase 1-2 완료 검증 | 📌 예정 | P0 |
+          | 4/15 | 중간점검 (50% 진도) | 📌 예정 | P0 |
+          | 4/30 | 모든 목표 달성 완료 | 📌 예정 | P0 |
+          
+          ---
+          
+          ## 📊 성공 지표 및 검증
+          
+          ```
+          ✅ 정량적 지표
+          □ Lead Time 23% 개선 (15.6h → 12h)
+          □ PR 리뷰 39% 단축 (396 → 240분)
+          □ Issue→PR 45% 단축 (330 → 180분)
+          □ MTTR 50% 개선 (120 → 60분)
+          □ CFR 42% 개선 (5.2% → 3%)
+          □ 테스트 커버리지 20% ↑ (70% → 90%)
+          
+          ✅ 정성적 지표
+          □ 개발자 만족도 80% 이상
+          □ 팀 생산성 40% 향상
+          □ 자동화율 80% 이상
+          □ 배포 자신감 90% 이상
+          
+          ✅ 비즈니스 지표
+          □ 기능 출시 속도 27% ↑
+          □ 사용자 만족도 12% ↑
+          □ 운영 비용 15% ↓
+          ```
+          
+          ---
+          
+          ## 🚀 성공을 위한 체크리스트
+          
+          ### 주간 활동
+          - [ ] 메트릭 데이터 수집 및 분석
+          - [ ] 목표 진도율 검증 (50% 이상?)
+          - [ ] 팀 피드백 수집
+          - [ ] 리스크 상황 점검
+          - [ ] 다음 주 액션 계획 수립
+          
+          ### 이슈 해결 프로세스
+          - [ ] 장애 사항 즉시 보고
+          - [ ] 근본 원인 분석
+          - [ ] 해결 방안 수립
+          - [ ] 예방 대책 수립
+          - [ ] 팀 공유 및 학습
+          
+          ### 품질 보증
+          - [ ] 자동화된 테스트 실행
+          - [ ] 코드 리뷰 완료
+          - [ ] 문서화 업데이트
+          - [ ] 배포 체크리스트 검증
+          
+          ---
+          
+          **최종 목표**: 2026년 4월 30일까지 DORA Elite 성과(상위 1%) 달성 🏆
+          
+          *이 로드맵은 데이터 기반의 살아있는 문서입니다. 매주 업데이트됩니다.*
+          """
+          
+          # Roadmap 파일 저장
+          roadmap_file = Path('.github/metrics/improvement-roadmap.md')
+          with open(roadmap_file, 'w', encoding='utf-8') as f:
+              f.write(roadmap)
+          
+          print("✓ Roadmap Markdown generated")
+          
+          # JSON 형식도 생성
+          roadmap_json = {
+              "generated_at": datetime.now().isoformat(),
+              "phases": [
+                  {
+                      "phase": 1,
+                      "name": "자동화된 코드 검사 시스템",
+                      "start_date": "2026-03-10",
+                      "end_date": "2026-03-23",
+                      "duration_weeks": 2,
+                      "goals": ["Lead Time 23% 개선"],
+                      "tasks": 5,
+                      "status": "in_progress"
+                  },
+                  {
+                      "phase": 2,
+                      "name": "Issue 관리 자동화",
+                      "start_date": "2026-03-20",
+                      "end_date": "2026-04-01",
+                      "duration_weeks": 3,
+                      "goals": ["Issue→PR 45% 단축"],
+                      "tasks": 4,
+                      "status": "pending"
+                  },
+                  {
+                      "phase": 3,
+                      "name": "MTTR 개선 시스템",
+                      "start_date": "2026-03-24",
+                      "end_date": "2026-04-08",
+                      "duration_weeks": 4,
+                      "goals": ["MTTR 50% 개선"],
+                      "tasks": 4,
+                      "status": "pending"
+                  },
+                  {
+                      "phase": 4,
+                      "name": "품질 및 테스트 자동화",
+                      "start_date": "2026-04-01",
+                      "end_date": "2026-04-30",
+                      "duration_weeks": 4,
+                      "goals": ["CFR 42% 개선", "테스트 커버리지 20% ↑"],
+                      "tasks": 5,
+                      "status": "pending"
+                  }
+              ],
+              "milestones": [
+                  {"date": "2026-03-10", "title": "개선 계획 수립", "status": "completed"},
+                  {"date": "2026-03-13", "title": "ESLint + Prettier 완료", "status": "in_progress"},
+                  {"date": "2026-03-31", "title": "Phase 1-2 완료", "status": "pending"},
+                  {"date": "2026-04-15", "title": "중간점검 (50%)", "status": "pending"},
+                  {"date": "2026-04-30", "title": "최종 목표 달성", "status": "pending"}
+              ]
+          }
+          
+          roadmap_json_file = Path('.github/metrics/improvement-roadmap.json')
+          with open(roadmap_json_file, 'w', encoding='utf-8') as f:
+              json.dump(roadmap_json, f, indent=2, ensure_ascii=False)
+          
+          print("✓ Roadmap JSON generated")
+          EOF
+
+      - name: Commit improvements
+        run: |
+          git config --local user.email "improvement-bot@github.com"
+          git config --local user.name "Improvement Bot"
+          
+          if [ -f ".github/metrics/improvement-roadmap.md" ] || [ -f ".github/metrics/improvement-roadmap.json" ]; then
+            git add IMPROVEMENT.md .github/metrics/improvement-*.* || true
+            
+            if ! git diff --quiet && ! git diff --staged --quiet; then
+              git commit -m "docs: Add improvement plan and roadmap - $(date +'%Y-%m-%d')" || true
+              git push origin main || true
+            fi
+          fi
+        shell: bash

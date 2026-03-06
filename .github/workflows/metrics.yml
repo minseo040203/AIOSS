@@ -1,0 +1,240 @@
+name: Metrics - Lead Time Tracking
+
+on:
+  issues:
+    types: [opened, closed]
+  pull_request:
+    types: [opened, closed, synchronize]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 9 * * 1'
+
+jobs:
+  track-metrics:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: read
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Track Metrics
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const metricsDir = '.github/metrics';
+            const metricsFile = path.join(metricsDir, 'lead-time-metrics.json');
+            
+            if (!fs.existsSync(metricsDir)) {
+              fs.mkdirSync(metricsDir, { recursive: true });
+            }
+            
+            let metrics = [];
+            if (fs.existsSync(metricsFile)) {
+              try {
+                metrics = JSON.parse(fs.readFileSync(metricsFile, 'utf8'));
+              } catch (e) {
+                console.log('Starting fresh metrics');
+                metrics = [];
+              }
+            }
+            
+            const timestamp = new Date().toISOString();
+            
+            if (context.payload.issue) {
+              const issue = context.payload.issue;
+              const action = context.payload.action;
+              
+              console.log(`Processing issue #${issue.number} - ${action}`);
+              
+              const existingEntry = metrics.find(m => m.issue_number === issue.number);
+              
+              if (action === 'opened' && !existingEntry) {
+                metrics.push({
+                  issue_number: issue.number,
+                  title: issue.title,
+                  issue_created_at: issue.created_at,
+                  issue_closed_at: null,
+                  pr_numbers: [],
+                  pr_created_at: null,
+                  pr_merged_at: null,
+                  deployed_at: null,
+                  lead_time_minutes: null,
+                  stages: {
+                    issue_to_pr_minutes: null,
+                    pr_review_merge_minutes: null,
+                    merge_to_deployment_minutes: null
+                  }
+                });
+                
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  body: '## Measurement Lead Time Tracking Started\n\nIssue Created: ' + new Date(issue.created_at).toISOString() + '\n\nWaiting for PR creation...'
+                });
+              } else if (action === 'closed' && existingEntry) {
+                existingEntry.issue_closed_at = timestamp;
+              }
+            }
+            
+            if (context.payload.pull_request) {
+              const pr = context.payload.pull_request;
+              const action = context.payload.action;
+              
+              console.log(`Processing PR #${pr.number} - ${action}`);
+              
+              const issueMatch = pr.body?.match(/#(\d+)/);
+              const relatedIssueNumber = issueMatch ? parseInt(issueMatch[1]) : null;
+              
+              if (relatedIssueNumber) {
+                const issueEntry = metrics.find(m => m.issue_number === relatedIssueNumber);
+                
+                if (action === 'opened' && issueEntry) {
+                  issueEntry.pr_numbers.push(pr.number);
+                  issueEntry.pr_created_at = pr.created_at;
+                  
+                  if (issueEntry.issue_created_at) {
+                    const issueTime = new Date(issueEntry.issue_created_at).getTime();
+                    const prTime = new Date(pr.created_at).getTime();
+                    issueEntry.stages.issue_to_pr_minutes = Math.round((prTime - issueTime) / (1000 * 60));
+                  }
+                  
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: relatedIssueNumber,
+                    body: '## PR Created\n\nPR #' + pr.number + ': ' + pr.title + '\nTime from Issue: ' + issueEntry.stages.issue_to_pr_minutes + ' min\n\nWaiting for merge...'
+                  });
+                } else if (action === 'closed' && pr.merged && issueEntry) {
+                  issueEntry.pr_merged_at = pr.merged_at;
+                  
+                  if (issueEntry.pr_created_at) {
+                    const prTime = new Date(issueEntry.pr_created_at).getTime();
+                    const mergeTime = new Date(pr.merged_at).getTime();
+                    issueEntry.stages.pr_review_merge_minutes = Math.round((mergeTime - prTime) / (1000 * 60));
+                  }
+                  
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: relatedIssueNumber,
+                    body: '## PR Merged\n\nPR #' + pr.number + ' merged!\nReview & Merge time: ' + issueEntry.stages.pr_review_merge_minutes + ' min\n\nWaiting for deployment...'
+                  });
+                }
+              }
+            }
+            
+            fs.writeFileSync(metricsFile, JSON.stringify(metrics, null, 2));
+            console.log('Metrics saved');
+
+      - name: Record Deployment
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const metricsFile = path.join('.github/metrics', 'lead-time-metrics.json');
+            
+            if (fs.existsSync(metricsFile)) {
+              let metrics = JSON.parse(fs.readFileSync(metricsFile, 'utf8'));
+              const latestEntry = metrics[metrics.length - 1];
+              
+              if (latestEntry && !latestEntry.deployed_at) {
+                const deploymentTime = new Date().toISOString();
+                latestEntry.deployed_at = deploymentTime;
+                
+                if (latestEntry.issue_created_at) {
+                  const issueTime = new Date(latestEntry.issue_created_at).getTime();
+                  const deployTime = new Date(deploymentTime).getTime();
+                  latestEntry.lead_time_minutes = Math.round((deployTime - issueTime) / (1000 * 60));
+                }
+                
+                if (latestEntry.pr_merged_at) {
+                  const mergeTime = new Date(latestEntry.pr_merged_at).getTime();
+                  const deployTime = new Date(deploymentTime).getTime();
+                  latestEntry.stages.merge_to_deployment_minutes = Math.round((deployTime - mergeTime) / (1000 * 60));
+                }
+                
+                fs.writeFileSync(metricsFile, JSON.stringify(metrics, null, 2));
+                
+                if (latestEntry.issue_number) {
+                  const days = Math.floor(latestEntry.lead_time_minutes / (24 * 60));
+                  const hours = Math.floor((latestEntry.lead_time_minutes % (24 * 60)) / 60);
+                  const mins = latestEntry.lead_time_minutes % 60;
+                  
+                  const breakdown = 'Issue → PR: ' + (latestEntry.stages.issue_to_pr_minutes || '-') + ' min\nReview & Merge: ' + (latestEntry.stages.pr_review_merge_minutes || '-') + ' min\nMerge → Deploy: ' + (latestEntry.stages.merge_to_deployment_minutes || '-') + ' min\nTotal: ' + latestEntry.lead_time_minutes + ' min (' + days + 'd ' + hours + 'h ' + mins + 'm)';
+                  
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: latestEntry.issue_number,
+                    body: '## Deployment Complete\n\nDeployed: ' + deploymentTime + '\n\nLead Time Breakdown:\n' + breakdown + '\n\nMeasurement complete!'
+                  });
+                }
+              }
+            }
+
+      - name: Generate Report
+        if: github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const metricsFile = path.join('.github/metrics', 'lead-time-metrics.json');
+            
+            if (!fs.existsSync(metricsFile)) {
+              console.log('No metrics found');
+              return;
+            }
+            
+            const metrics = JSON.parse(fs.readFileSync(metricsFile, 'utf8'));
+            const completedEntries = metrics.filter(m => m.deployed_at && m.lead_time_minutes);
+            
+            if (completedEntries.length === 0) {
+              console.log('No completed deployments');
+              return;
+            }
+            
+            const leadTimes = completedEntries.map(m => m.lead_time_minutes);
+            const avgLeadTime = Math.round(leadTimes.reduce((a, b) => a + b, 0) / leadTimes.length);
+            const minLeadTime = Math.min(...leadTimes);
+            const maxLeadTime = Math.max(...leadTimes);
+            const medianLeadTime = leadTimes.sort((a, b) => a - b)[Math.floor(leadTimes.length / 2)];
+            
+            const fastest = [...completedEntries].sort((a, b) => a.lead_time_minutes - b.lead_time_minutes).slice(0, 5);
+            const slowest = [...completedEntries].sort((a, b) => b.lead_time_minutes - a.lead_time_minutes).slice(0, 5);
+            
+            const fastestList = fastest.map(m => '- #' + m.issue_number + ': ' + m.lead_time_minutes + ' min - ' + m.title).join('\n');
+            const slowestList = slowest.map(m => '- #' + m.issue_number + ': ' + m.lead_time_minutes + ' min - ' + m.title).join('\n');
+            
+            const report = '# Lead Time Report\n\nGenerated: ' + new Date().toISOString() + '\nDeployments: ' + completedEntries.length + '\n\n## Summary\n\nAverage: ' + avgLeadTime + ' min\nMedian: ' + medianLeadTime + ' min\nFastest: ' + minLeadTime + ' min\nSlowest: ' + maxLeadTime + ' min\n\n## Fastest\n\n' + fastestList + '\n\n## Slowest\n\n' + slowestList;
+            
+            const reportFile = path.join('.github/metrics', 'weekly-report.md');
+            fs.writeFileSync(reportFile, report);
+            
+            console.log('Report generated');
+
+      - name: Commit metrics
+        if: always()
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          if [ -d ".github/metrics" ]; then
+            git add .github/metrics/ || true
+            git diff --quiet && git diff --staged --quiet || git commit -m "Update metrics" || true
+            git push origin main || true
+          fi
+        shell: bash

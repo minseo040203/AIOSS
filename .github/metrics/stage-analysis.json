@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-03-06T04:35:05.974206",
+  "stage_statistics": {
+    "issue_to_pr_times": {
+      "count": 20,
+      "avg_minutes": 330,
+      "median_minutes": 330.0,
+      "min_minutes": 120,
+      "max_minutes": 480,
+      "total_percentage": 35.26
+    },
+    "review_merge_times": {
+      "count": 20,
+      "avg_minutes": 396,
+      "median_minutes": 450.0,
+      "min_minutes": 120,
+      "max_minutes": 660,
+      "total_percentage": 42.31
+    },
+    "merge_to_deploy_times": {
+      "count": 20,
+      "avg_minutes": 210,
+      "median_minutes": 180.0,
+      "min_minutes": 60,
+      "max_minutes": 360,
+      "total_percentage": 22.44
+    }
+  }
+}

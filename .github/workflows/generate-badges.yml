@@ -1,0 +1,347 @@
+name: Generate Metrics Badges
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+  workflow_run:
+    workflows: ['DORA Metrics Collection & Automation']
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate-badges:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Generate Badge Markdown
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            console.log('📊 Generating metrics badges...');
+            
+            const metricsDir = '.github/metrics';
+            
+            // 메트릭 데이터 로드
+            function loadJson(filename) {
+              try {
+                return JSON.parse(fs.readFileSync(path.join(metricsDir, filename), 'utf8'));
+              } catch (e) {
+                return null;
+              }
+            }
+            
+            const cycleTime = loadJson('cycle-time-metrics.json');
+            const deployment = loadJson('deployment-frequency.json');
+            const mttr = loadJson('mttr-analysis.json');
+            const cfr = loadJson('change-failure-rate.json');
+            
+            // 뱃지 생성 함수
+            function createBadge(label, message, color) {
+              const encoded = encodeURIComponent(message);
+              return `![${label}](https://img.shields.io/badge/${label}-${encoded}-${color})`;
+            }
+            
+            let badges = '';
+            
+            // Lead Time 뱃지
+            if (cycleTime && cycleTime.statistics) {
+              const hours = (cycleTime.statistics.avg_cycle_time_minutes / 60).toFixed(1);
+              const color = hours <= 24 ? 'green' : hours <= 48 ? 'yellow' : 'red';
+              badges += createBadge('Lead Time', hours + 'h', color) + ' ';
+            }
+            
+            // Deployment Frequency 뱃지
+            if (deployment && deployment.metrics) {
+              const freq = deployment.metrics.avg_deployments_per_day * 7;
+              const color = freq >= 10 ? 'green' : freq >= 5 ? 'yellow' : 'orange';
+              badges += createBadge('Deployments/week', freq.toFixed(1), color) + ' ';
+            }
+            
+            // MTTR 뱃지
+            if (mttr && mttr.metrics) {
+              const minutes = mttr.metrics.avg_recovery_minutes;
+              const color = minutes <= 60 ? 'green' : minutes <= 240 ? 'yellow' : 'red';
+              let label = minutes < 60 ? minutes.toFixed(0) + 'm' : (minutes / 60).toFixed(1) + 'h';
+              badges += createBadge('MTTR', label, color) + ' ';
+            }
+            
+            // CFR 뱃지
+            if (cfr && cfr.metrics) {
+              const rate = cfr.metrics.failure_rate_percent;
+              const color = rate < 15 ? 'green' : rate < 30 ? 'yellow' : 'red';
+              badges += createBadge('CFR', rate.toFixed(1) + '%', color) + ' ';
+            }
+            
+            // 뱃지 파일 저장
+            fs.writeFileSync(path.join(metricsDir, 'badges.md'), badges);
+            console.log('✓ Badges generated');
+            
+            core.setOutput('badges', badges);
+
+      - name: Create Badge Shields JSON
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const metricsDir = '.github/metrics';
+            
+            function loadJson(filename) {
+              try {
+                return JSON.parse(fs.readFileSync(path.join(metricsDir, filename), 'utf8'));
+              } catch (e) {
+                return null;
+              }
+            }
+            
+            const cycleTime = loadJson('cycle-time-metrics.json');
+            const deployment = loadJson('deployment-frequency.json');
+            const mttr = loadJson('mttr-analysis.json');
+            const cfr = loadJson('change-failure-rate.json');
+            
+            const badges = {
+              lead_time: {
+                label: 'Lead Time',
+                message: cycleTime && cycleTime.statistics 
+                  ? (cycleTime.statistics.avg_cycle_time_minutes / 60).toFixed(1) + 'h'
+                  : '--',
+                color: 'green'
+              },
+              deployment_frequency: {
+                label: 'Deployments/week',
+                message: deployment && deployment.metrics
+                  ? (deployment.metrics.avg_deployments_per_day * 7).toFixed(1)
+                  : '--',
+                color: 'green'
+              },
+              mttr: {
+                label: 'MTTR',
+                message: mttr && mttr.metrics
+                  ? (mttr.metrics.avg_recovery_minutes < 60 
+                    ? mttr.metrics.avg_recovery_minutes.toFixed(0) + 'm'
+                    : (mttr.metrics.avg_recovery_minutes / 60).toFixed(1) + 'h')
+                  : '--',
+                color: 'green'
+              },
+              cfr: {
+                label: 'CFR',
+                message: cfr && cfr.metrics
+                  ? cfr.metrics.failure_rate_percent.toFixed(1) + '%'
+                  : '--',
+                color: 'green'
+              }
+            };
+            
+            fs.writeFileSync(
+              path.join(metricsDir, 'badges.json'),
+              JSON.stringify(badges, null, 2)
+            );
+            
+            console.log('✓ Badge JSON created');
+
+      - name: Update README Badges
+        run: |
+          python3 << 'EOF'
+          import json
+          import re
+          from pathlib import Path
+          
+          badges_file = Path('.github/metrics/badges.json')
+          readme_file = Path('README.md')
+          
+          if not badges_file.exists():
+              print('No badges file found')
+              exit(0)
+          
+          # 뱃지 JSON 로드
+          with open(badges_file, 'r', encoding='utf-8') as f:
+              badges = json.load(f)
+          
+          # README 읽기
+          with open(readme_file, 'r', encoding='utf-8', errors='ignore') as f:
+              readme = f.read()
+          
+          # 뱃지 마크다운 생성
+          badge_md = """## 📊 실시간 메트릭 뱃지
+          
+          ![Lead Time](https://img.shields.io/badge/Lead%20Time-{lead_time}-green)
+          ![Deployments](https://img.shields.io/badge/Deployments%2Fweek-{deployment}-green)
+          ![MTTR](https://img.shields.io/badge/MTTR-{mttr}-green)
+          ![CFR](https://img.shields.io/badge/CFR-{cfr}-green)
+          """.format(
+              lead_time=badges['lead_time']['message'],
+              deployment=badges['deployment_frequency']['message'],
+              mttr=badges['mttr']['message'],
+              cfr=badges['cfr']['message']
+          )
+          
+          # README에 뱃지 섹션이 없으면 추가
+          if '## 📊 실시간 메트릭 뱃지' not in readme:
+              # 프로젝트 개요 섹션 다음에 추가
+              pattern = r'(## 📋 프로젝트 개요\n.*?\n\n)'
+              readme = re.sub(pattern, lambda m: m.group(0) + badge_md + '\n', readme)
+          else:
+              # 기존 뱃지 섹션 업데이트
+              pattern = r'## 📊 실시간 메트릭 뱃지\n\n![Lead Time].*?!\[CFR\].*?\n'
+              readme = re.sub(pattern, badge_md, readme, flags=re.DOTALL)
+          
+          # README 저장
+          with open(readme_file, 'w', encoding='utf-8') as f:
+              f.write(readme)
+          
+          print('✓ README badges updated')
+          EOF
+        shell: python
+
+      - name: Commit badge updates
+        run: |
+          git config --local user.email "metrics-bot@github.com"
+          git config --local user.name "Metrics Auto Bot"
+          
+          if [ -f ".github/metrics/badges.md" ] || [ -f ".github/metrics/badges.json" ]; then
+            git add .github/metrics/badges* || true
+            git add README.md || true
+            
+            if ! git diff --quiet && ! git diff --staged --quiet; then
+              git commit -m "chore: Update metrics badges - $(date +'%Y-%m-%d %H:%M:%S')" || true
+              git push origin main || true
+            fi
+          fi
+        shell: bash
+
+  publish-dashboard:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Generate Dashboard Static Files
+        run: |
+          mkdir -p public
+          cp dashboard.html public/index.html
+          echo "✓ Dashboard files prepared"
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          cname: metrics-dashboard.example.com
+
+  create-metrics-report:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 10 * * 1'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate Metrics Report Issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const metricsDir = '.github/metrics';
+            
+            function loadJson(filename) {
+              try {
+                return JSON.parse(fs.readFileSync(path.join(metricsDir, filename), 'utf8'));
+              } catch (e) {
+                return null;
+              }
+            }
+            
+            const cycleTime = loadJson('cycle-time-metrics.json');
+            const deployment = loadJson('deployment-frequency.json');
+            const mttr = loadJson('mttr-analysis.json');
+            const cfr = loadJson('change-failure-rate.json');
+            
+            let report = '# 📊 주간 DORA 메트릭 보고서\n\n';
+            report += `**생성일**: ${new Date().toISOString().split('T')[0]}\n\n`;
+            
+            // Lead Time
+            if (cycleTime && cycleTime.statistics) {
+              const stats = cycleTime.statistics;
+              const hours = (stats.avg_cycle_time_minutes / 60).toFixed(1);
+              report += '## 🚀 Lead Time\n\n';
+              report += `- **평균**: ${hours}시간\n`;
+              report += `- **중앙값**: ${(stats.median_cycle_time_minutes / 60).toFixed(1)}시간\n`;
+              report += `- **목표**: 24시간\n`;
+              report += `- **상태**: ${hours <= 24 ? '✅ 목표 달성' : '⚠️ 개선 필요'}\n\n`;
+            }
+            
+            // Deployment Frequency
+            if (deployment && deployment.metrics) {
+              const metrics = deployment.metrics;
+              const freq = (metrics.avg_deployments_per_day * 7).toFixed(1);
+              report += '## 📈 Deployment Frequency\n\n';
+              report += `- **주간 배포**: ${freq}회\n`;
+              report += `- **성공률**: ${metrics.success_rate.toFixed(1)}%\n`;
+              report += `- **상태**: ${freq >= 10 ? '✅ 우수' : '⚠️ 개선 필요'}\n\n`;
+            }
+            
+            // MTTR
+            if (mttr && mttr.metrics) {
+              const metrics = mttr.metrics;
+              const mins = metrics.avg_recovery_minutes.toFixed(0);
+              report += '## 🏥 MTTR\n\n';
+              report += `- **평균 복구 시간**: ${mins}분\n`;
+              report += `- **최소**: ${metrics.min_recovery_minutes.toFixed(0)}분\n`;
+              report += `- **최대**: ${metrics.max_recovery_minutes.toFixed(0)}분\n`;
+              report += `- **상태**: ${mins <= 60 ? '✅ 목표 달성' : '⚠️ 개선 필요'}\n\n`;
+            }
+            
+            // CFR
+            if (cfr && cfr.metrics) {
+              const rate = cfr.metrics.failure_rate_percent.toFixed(1);
+              report += '## ⚠️ Change Failure Rate\n\n';
+              report += `- **장애율**: ${rate}%\n`;
+              report += `- **롤백률**: ${cfr.metrics.rollback_rate_percent.toFixed(1)}%\n`;
+              report += `- **목표**: < 15%\n`;
+              report += `- **상태**: ${rate < 15 ? '✅ 목표 달성' : '⚠️ 개선 필요'}\n\n`;
+            }
+            
+            report += '---\n';
+            report += '📊 [대시보드 보기](https://github.com/' + context.repo.owner + '/' + context.repo.repo + '/': '대시보드 링크 추가 예정'\n';
+            report += '*자동으로 생성된 DORA 메트릭 보고서입니다.*\n';
+            
+            // Issue 생성
+            try {
+              const issue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `[Report] DORA Weekly Report - ${new Date().toISOString().split('T')[0]}`,
+                body: report,
+                labels: ['report', 'metrics', 'dora', 'automated']
+              });
+              
+              console.log(`✓ Report issue created: #${issue.data.number}`);
+            } catch (error) {
+              console.error('Error creating report issue:', error);
+            }

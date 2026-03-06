@@ -1,0 +1,8 @@
+{
+  "goal_minutes": 1440,
+  "goal_hours": 24.0,
+  "compliance_rate_percent": 100.0,
+  "within_goal": 20,
+  "exceeding_goal": 0,
+  "avg_variance_minutes": 504
+}

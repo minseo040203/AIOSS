@@ -1,0 +1,439 @@
+{
+  "analysis_date": "2026-03-06",
+  "project": "라즈베리파이 기반 재난안전 정보 RAG AI 비서",
+  "analysis_period_days": 30,
+  "current_metrics": {
+    "lead_time": {
+      "value": 15.6,
+      "unit": "hours",
+      "target": 24,
+      "status": "healthy",
+      "trend": "improving"
+    },
+    "deployment_frequency": {
+      "value": 14.2,
+      "unit": "per_week",
+      "target": 10,
+      "status": "excellent",
+      "trend": "stable"
+    },
+    "mttr": {
+      "value": 120,
+      "unit": "minutes",
+      "target": 60,
+      "status": "warning",
+      "trend": "needs_improvement"
+    },
+    "cfr": {
+      "value": 5.2,
+      "unit": "percent",
+      "target": 15,
+      "status": "healthy",
+      "trend": "stable"
+    },
+    "cycle_time": {
+      "value": 936,
+      "unit": "minutes",
+      "target": 1440,
+      "weekly_improvement": -45,
+      "trend": "improving"
+    }
+  },
+  "bottleneck_analysis": {
+    "bottleneck_1": {
+      "name": "PR Review & Merge",
+      "stage": "2_review_merge",
+      "duration_minutes": 396,
+      "percentage_of_total": 42.31,
+      "priority": 1,
+      "root_causes": [
+        "코드 리뷰 프로세스 미흡",
+        "자동화된 코드 검사 부재",
+        "도메인 전문가 리뷰 의존",
+        "리뷰 가이드라인 부재"
+      ],
+      "impact": "전체 Cycle Time의 42.31% 차지",
+      "recommended_actions": [
+        "ESLint + Prettier 자동화",
+        "SonarQube 통합",
+        "PR 리뷰 템플릿 작성",
+        "자동 리뷰 봇 구현"
+      ]
+    },
+    "bottleneck_2": {
+      "name": "Issue → PR",
+      "stage": "1_issue_to_pr",
+      "duration_minutes": 330,
+      "percentage_of_total": 35.26,
+      "priority": 2,
+      "root_causes": [
+        "Issue 등록 후 개발 시작까지 지연",
+        "요구사항 명확화 시간 부족",
+        "Issue 템플릿 미흡",
+        "개발자 할당 프로세스 비효율"
+      ],
+      "impact": "전체 Cycle Time의 35.26% 차지",
+      "recommended_actions": [
+        "Issue 템플릿 개선",
+        "자동 할당 로직 구현",
+        "자동 레이블링 시스템",
+        "개발자별 작업량 분석"
+      ]
+    },
+    "bottleneck_3": {
+      "name": "MTTR 개선",
+      "stage": "mttr_recovery",
+      "duration_minutes": 120,
+      "target_minutes": 60,
+      "priority": 2,
+      "root_causes": [
+        "자동 롤백 메커니즘 부재",
+        "장애 대응 프로세스 수동화",
+        "모니터링 및 알림 미흡",
+        "사후 검증 체크리스트 부재"
+      ],
+      "impact": "개발팀 생산성 저하, 사용자 만족도 하락",
+      "recommended_actions": [
+        "자동 롤백 메커니즘 구현",
+        "통합 모니터링 및 알림 개선",
+        "장애 대응 플레이북 작성",
+        "자동 헬스 체크 고도화"
+      ]
+    }
+  },
+  "smart_goals": {
+    "goal_1": {
+      "id": "G1",
+      "name": "Lead Time 개선 (PR Review 병목 해결)",
+      "specific": "PR 리뷰 시간을 평균 5.5시간 → 2시간으로 단축",
+      "measurable": "GitHub PR 메트릭 (review_time 필드) 추적",
+      "achievable": "자동 코드 검사 + 리뷰 템플릿 도입 가능",
+      "relevant": "Cycle Time 42% 개선으로 전체 성과 향상",
+      "time_bound": "8주 내 달성 (2026-04-30)",
+      "targets": {
+        "lead_time_hours": {
+          "current": 15.6,
+          "target": 12,
+          "improvement_percent": 23
+        },
+        "review_minutes": {
+          "current": 396,
+          "target": 240,
+          "improvement_percent": 39
+        },
+        "auto_check_rate": {
+          "current": 0.6,
+          "target": 0.9,
+          "improvement_percent": 30
+        }
+      },
+      "measurement": {
+        "frequency": "daily",
+        "start_date": "2026-03-10",
+        "target_completion": "2026-04-30",
+        "metrics": [
+          "average_review_time",
+          "auto_check_pass_rate",
+          "lead_time_hours"
+        ]
+      }
+    },
+    "goal_2": {
+      "id": "G2",
+      "name": "Issue → PR 시간 단축",
+      "specific": "Issue 등록 후 PR 생성까지 5.5시간 → 3시간으로 단축",
+      "measurable": "GitHub 이슈 생성 ~ PR 생성 시간 추적",
+      "achievable": "이슈 템플릿 + 자동 할당 로직 구현 가능",
+      "relevant": "Cycle Time 35% 개선으로 초기 지연 해소",
+      "time_bound": "6주 내 달성 (2026-04-20)",
+      "targets": {
+        "issue_to_pr_minutes": {
+          "current": 330,
+          "target": 180,
+          "improvement_percent": 45
+        },
+        "issue_clarity_score": {
+          "current": 0.7,
+          "target": 0.95,
+          "improvement_percent": 25
+        },
+        "auto_assign_rate": {
+          "current": 0.0,
+          "target": 0.8,
+          "improvement_percent": 80
+        }
+      },
+      "measurement": {
+        "frequency": "daily",
+        "start_date": "2026-03-10",
+        "target_completion": "2026-04-20",
+        "metrics": [
+          "issue_to_pr_duration",
+          "issue_clarity_score",
+          "auto_assign_rate"
+        ]
+      }
+    },
+    "goal_3": {
+      "id": "G3",
+      "name": "MTTR 개선 (장애 복구 시간 단축)",
+      "specific": "장애 복구 시간 120분 → 60분으로 단축 (50% 개선)",
+      "measurable": "incidents.json의 recovery_time 추적",
+      "achievable": "자동 롤백 + 모니터링 고도화 가능",
+      "relevant": "사용자 만족도 향상, 비즈니스 연속성 보장",
+      "time_bound": "10주 내 달성 (2026-05-15)",
+      "targets": {
+        "mttr_minutes": {
+          "current": 120,
+          "target": 60,
+          "improvement_percent": 50
+        },
+        "auto_rollback_rate": {
+          "current": 0.2,
+          "target": 0.7,
+          "improvement_percent": 50
+        },
+        "alert_latency_seconds": {
+          "current": 300,
+          "target": 180,
+          "improvement_percent": 40
+        }
+      },
+      "measurement": {
+        "frequency": "incident_based",
+        "start_date": "2026-03-10",
+        "target_completion": "2026-05-15",
+        "metrics": [
+          "total_recovery_time",
+          "auto_rollback_rate",
+          "alert_latency"
+        ]
+      }
+    },
+    "goal_4": {
+      "id": "G4",
+      "name": "Change Failure Rate 유지 및 개선",
+      "specific": "CFR을 현재 5.2% 에서 3% 이하로 유지 개선",
+      "measurable": "change-failure-rate.json 추적",
+      "achievable": "자동 테스트 + 배포 게이트 강화",
+      "relevant": "품질 확보, 사용자 신뢰도 향상",
+      "time_bound": "지속적 개선 (매월 점검)",
+      "targets": {
+        "cfr_percent": {
+          "current": 5.2,
+          "target": 3,
+          "improvement_percent": 42
+        },
+        "test_coverage": {
+          "current": 0.7,
+          "target": 0.9,
+          "improvement_percent": 20
+        },
+        "deployment_validation_rate": {
+          "current": 0.95,
+          "target": 0.99,
+          "improvement_percent": 4
+        }
+      },
+      "measurement": {
+        "frequency": "monthly",
+        "start_date": "2026-03-10",
+        "target_completion": "ongoing",
+        "metrics": [
+          "cfr_percent",
+          "test_coverage",
+          "deployment_validation_rate"
+        ]
+      }
+    }
+  },
+  "action_plan": {
+    "phase_1": {
+      "name": "자동화된 코드 검사 시스템 구축",
+      "duration_weeks": 2,
+      "target_completion": "2026-03-23",
+      "actions": [
+        {
+          "id": "1-1",
+          "task": "ESLint + Prettier 자동화",
+          "owner": "Backend",
+          "due_date": "2026-03-13",
+          "expected_impact": "코드 스타일 30% 자동 검사"
+        },
+        {
+          "id": "1-2",
+          "task": "SonarQube 통합",
+          "owner": "DevOps",
+          "due_date": "2026-03-15",
+          "expected_impact": "코드 품질 20% 개선"
+        },
+        {
+          "id": "1-3",
+          "task": "PR 리뷰 템플릿 작성",
+          "owner": "PM",
+          "due_date": "2026-03-10",
+          "expected_impact": "리뷰 시간 15% 단축"
+        },
+        {
+          "id": "1-4",
+          "task": "자동 리뷰 봇 (GitHub Actions)",
+          "owner": "Backend",
+          "due_date": "2026-03-17",
+          "expected_impact": "자동 검사 50%"
+        }
+      ]
+    },
+    "phase_2": {
+      "name": "Issue 관리 및 자동 할당 시스템",
+      "duration_weeks": 3,
+      "target_completion": "2026-04-01",
+      "actions": [
+        {
+          "id": "2-1",
+          "task": "Issue 템플릿 개선",
+          "owner": "PM",
+          "due_date": "2026-03-10",
+          "expected_impact": "이슈 명확도 70% → 95%"
+        },
+        {
+          "id": "2-2",
+          "task": "자동 할당 로직",
+          "owner": "Backend",
+          "due_date": "2026-03-20",
+          "expected_impact": "할당 지연 제거"
+        },
+        {
+          "id": "2-3",
+          "task": "자동 레이블링 시스템",
+          "owner": "DevOps",
+          "due_date": "2026-03-22",
+          "expected_impact": "분류 자동화 80%"
+        }
+      ]
+    },
+    "phase_3": {
+      "name": "자동 롤백 및 MTTR 개선 시스템",
+      "duration_weeks": 4,
+      "target_completion": "2026-04-08",
+      "actions": [
+        {
+          "id": "3-1",
+          "task": "자동 롤백 메커니즘",
+          "owner": "DevOps",
+          "due_date": "2026-03-24",
+          "expected_impact": "롤백 시간 70% 단축"
+        },
+        {
+          "id": "3-2",
+          "task": "통합 모니터링 개선",
+          "owner": "DevOps",
+          "due_date": "2026-03-28",
+          "expected_impact": "감지 시간 3분 이내"
+        },
+        {
+          "id": "3-3",
+          "task": "장애 대응 플레이북",
+          "owner": "Backend",
+          "due_date": "2026-03-22",
+          "expected_impact": "절차 표준화 40%"
+        }
+      ]
+    },
+    "phase_4": {
+      "name": "품질 및 테스트 자동화 강화",
+      "duration_weeks": 4,
+      "target_completion": "2026-04-30",
+      "actions": [
+        {
+          "id": "4-1",
+          "task": "자동 테스트 커버리지 분석",
+          "owner": "QA",
+          "due_date": "2026-03-18",
+          "expected_impact": "테스트 커버리지 추적"
+        },
+        {
+          "id": "4-2",
+          "task": "E2E 테스트 자동화 확대",
+          "owner": "QA",
+          "due_date": "2026-03-28",
+          "expected_impact": "자동 테스트 50% ↑"
+        },
+        {
+          "id": "4-3",
+          "task": "배포 게이트 강화",
+          "owner": "DevOps",
+          "due_date": "2026-03-25",
+          "expected_impact": "배포 전 검증 99%"
+        }
+      ]
+    }
+  },
+  "expected_outcomes": {
+    "quantitative": {
+      "lead_time": {
+        "before": "15.6 hours",
+        "after": "12 hours",
+        "improvement": "23%"
+      },
+      "pr_review_time": {
+        "before": "396 minutes",
+        "after": "240 minutes",
+        "improvement": "39%"
+      },
+      "issue_to_pr_time": {
+        "before": "330 minutes",
+        "after": "180 minutes",
+        "improvement": "45%"
+      },
+      "mttr": {
+        "before": "120 minutes",
+        "after": "60 minutes",
+        "improvement": "50%"
+      },
+      "cfr": {
+        "before": "5.2%",
+        "after": "3%",
+        "improvement": "42%"
+      },
+      "test_coverage": {
+        "before": "70%",
+        "after": "90%",
+        "improvement": "20%"
+      }
+    },
+    "qualitative": [
+      "개발자 수동 작업 60% 감소",
+      "버그 발생 50% 감소",
+      "배포 빈도 27% 증가",
+      "팀 생산성 40% 향상",
+      "코드 품질 40% 개선"
+    ],
+    "business_impact": {
+      "development_speed": "배포 시간 단축으로 기능 제공 가속화",
+      "user_satisfaction": "장애 감소 및 신뢰도 향상",
+      "team_morale": "자동화로 인한 작업 만족도 향상",
+      "cost_reduction": "수동 개입 감소로 운영 비용 절감"
+    }
+  },
+  "success_metrics": [
+    "모든 SMART 목표 달성율 >= 90%",
+    "주간 메트릭 개선 추세 유지",
+    "팀 만족도 점수 80% 이상",
+    "배포 실패율 < 1%",
+    "자동화율 >= 80%"
+  ],
+  "risk_mitigation": [
+    {
+      "risk": "팀의 저항",
+      "mitigation": "교육 및 점진적 도입"
+    },
+    {
+      "risk": "기술 복잡성",
+      "mitigation": "외부 전문가 지원"
+    },
+    {
+      "risk": "리소스 부족",
+      "mitigation": "우선순위 재조정"
+    }
+  ]
+}

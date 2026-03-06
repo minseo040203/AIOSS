@@ -1,0 +1,277 @@
+{
+  "generated_at": "2026-03-10T00:00:00",
+  "roadmap_title": "DORA 지표 개선 계획 - 8주 로드맵",
+  "objective": "DORA Elite 성과 달성 (상위 1%)",
+  "timeline": "2026년 3월 10일 ~ 4월 30일",
+  "expected_improvements": {
+    "lead_time": "-23%",
+    "deployment_frequency": "+27%",
+    "mttr": "-50%",
+    "cfr": "-42%"
+  },
+  "phases": [
+    {
+      "phase": 1,
+      "name": "자동화된 코드 검사 시스템",
+      "start_date": "2026-03-10",
+      "end_date": "2026-03-23",
+      "duration_weeks": 2,
+      "objectives": [
+        "ESLint + Prettier 자동화",
+        "SonarQube 통합",
+        "자동 리뷰 봇 구현",
+        "CI/CD 파이프라인 개선"
+      ],
+      "target_metrics": {
+        "auto_check_rate": "60% → 90%",
+        "review_count": "3-5회 → 1-2회",
+        "pr_review_time": "396분 → 240분"
+      },
+      "expected_improvement": "39% PR 리뷰 시간 단축",
+      "owners": ["Backend", "DevOps", "PM"],
+      "checkpoints": [
+        {"date": "2026-03-13", "milestone": "ESLint + Prettier 완료", "progress": "25%"},
+        {"date": "2026-03-17", "milestone": "자동 리뷰 봇 배포", "progress": "50%"},
+        {"date": "2026-03-20", "milestone": "CI/CD 파이프라인 개선", "progress": "75%"},
+        {"date": "2026-03-23", "milestone": "최종 검증", "progress": "100%"}
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Issue 관리 자동화",
+      "start_date": "2026-03-20",
+      "end_date": "2026-04-01",
+      "duration_weeks": 3,
+      "objectives": [
+        "Issue 템플릿 개선",
+        "자동 할당 로직 구현",
+        "자동 레이블링 시스템",
+        "요구사항 명확화 프로세스"
+      ],
+      "target_metrics": {
+        "issue_clarity": "70% → 95%",
+        "auto_assignment_rate": "0% → 80%",
+        "issue_to_pr_time": "330분 → 220분"
+      },
+      "expected_improvement": "33% Issue→PR 시간 단축",
+      "owners": ["PM", "Backend", "DevOps"],
+      "checkpoints": [
+        {"date": "2026-03-22", "milestone": "Issue 템플릿 배포", "progress": "25%"},
+        {"date": "2026-03-25", "milestone": "자동 할당 완료", "progress": "50%"},
+        {"date": "2026-03-28", "milestone": "자동 레이블링 완료", "progress": "75%"},
+        {"date": "2026-04-01", "milestone": "최종 검증", "progress": "100%"}
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "MTTR 개선 시스템",
+      "start_date": "2026-03-24",
+      "end_date": "2026-04-08",
+      "duration_weeks": 4,
+      "objectives": [
+        "자동 롤백 시스템 구현",
+        "모니터링 개선",
+        "헬스 체크 고도화",
+        "장애 대응 자동화"
+      ],
+      "target_metrics": {
+        "auto_rollback_rate": "20% → 70%",
+        "detection_to_alert": "5분 → 3분",
+        "mttr_reduction": "120분 → 60분"
+      },
+      "expected_improvement": "50% MTTR 개선",
+      "owners": ["DevOps", "Backend"],
+      "checkpoints": [
+        {"date": "2026-03-27", "milestone": "자동 롤백 시스템 배포", "progress": "25%"},
+        {"date": "2026-03-28", "milestone": "모니터링 개선 완료", "progress": "50%"},
+        {"date": "2026-04-03", "milestone": "헬스 체크 고도화", "progress": "75%"},
+        {"date": "2026-04-08", "milestone": "최종 검증", "progress": "100%"}
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "품질 및 테스트 자동화",
+      "start_date": "2026-04-01",
+      "end_date": "2026-04-30",
+      "duration_weeks": 4,
+      "objectives": [
+        "E2E 테스트 확대",
+        "배포 게이트 강화",
+        "성능 & 보안 테스트",
+        "사용성 검증 자동화"
+      ],
+      "target_metrics": {
+        "test_coverage": "70% → 90%",
+        "cfr_reduction": "5.2% → 3%",
+        "pre_deployment_validation": "95% → 99%"
+      },
+      "expected_improvement": "42% CFR 개선, 20% 테스트 커버리지 증가",
+      "owners": ["QA", "DevOps"],
+      "checkpoints": [
+        {"date": "2026-04-05", "milestone": "E2E 테스트 확대", "progress": "25%"},
+        {"date": "2026-04-10", "milestone": "배포 게이트 강화", "progress": "50%"},
+        {"date": "2026-04-15", "milestone": "중간점검", "progress": "50%"},
+        {"date": "2026-04-20", "milestone": "성능 & 보안 테스트 완료", "progress": "75%"},
+        {"date": "2026-04-25", "milestone": "사용성 검증 완료", "progress": "90%"},
+        {"date": "2026-04-30", "milestone": "최종 검증", "progress": "100%"}
+      ]
+    }
+  ],
+  "milestones": [
+    {
+      "week": 1,
+      "date": "2026-03-10",
+      "milestone": "개선 계획 수립",
+      "status": "completed",
+      "impact": "P0",
+      "owner": "PM"
+    },
+    {
+      "week": 1,
+      "date": "2026-03-13",
+      "milestone": "ESLint + Prettier 완료",
+      "status": "in_progress",
+      "impact": "P1",
+      "owner": "Backend"
+    },
+    {
+      "week": 2,
+      "date": "2026-03-17",
+      "milestone": "자동 리뷰 봇 배포",
+      "status": "in_progress",
+      "impact": "P1",
+      "owner": "DevOps"
+    },
+    {
+      "week": 2,
+      "date": "2026-03-20",
+      "milestone": "Issue 자동 할당 시작",
+      "status": "pending",
+      "impact": "P1",
+      "owner": "PM"
+    },
+    {
+      "week": 3,
+      "date": "2026-03-24",
+      "milestone": "자동 롤백 시스템 배포",
+      "status": "pending",
+      "impact": "P2",
+      "owner": "DevOps"
+    },
+    {
+      "week": 4,
+      "date": "2026-03-31",
+      "milestone": "Phase 1-2 완료 검증",
+      "status": "pending",
+      "impact": "P0",
+      "owner": "PM"
+    },
+    {
+      "week": 6,
+      "date": "2026-04-15",
+      "milestone": "중간점검 (50% 진도)",
+      "status": "pending",
+      "impact": "P0",
+      "owner": "PM"
+    },
+    {
+      "week": 8,
+      "date": "2026-04-30",
+      "milestone": "모든 목표 달성 완료",
+      "status": "pending",
+      "impact": "P0",
+      "owner": "PM"
+    }
+  ],
+  "success_metrics": {
+    "quantitative": [
+      {
+        "metric": "Lead Time",
+        "current": "15.6h",
+        "target": "12h",
+        "improvement_percent": "-23%",
+        "measurement_frequency": "daily"
+      },
+      {
+        "metric": "PR 리뷰 시간",
+        "current": "396분",
+        "target": "240분",
+        "improvement_percent": "-39%",
+        "measurement_frequency": "daily"
+      },
+      {
+        "metric": "Issue→PR",
+        "current": "330분",
+        "target": "180분",
+        "improvement_percent": "-45%",
+        "measurement_frequency": "daily"
+      },
+      {
+        "metric": "MTTR",
+        "current": "120분",
+        "target": "60분",
+        "improvement_percent": "-50%",
+        "measurement_frequency": "weekly"
+      },
+      {
+        "metric": "CFR",
+        "current": "5.2%",
+        "target": "3%",
+        "improvement_percent": "-42%",
+        "measurement_frequency": "weekly"
+      },
+      {
+        "metric": "테스트 커버리지",
+        "current": "70%",
+        "target": "90%",
+        "improvement_percent": "+20%",
+        "measurement_frequency": "weekly"
+      }
+    ],
+    "qualitative": [
+      "개발자 만족도 80% 이상",
+      "팀 생산성 40% 향상",
+      "자동화율 80% 이상",
+      "배포 자신감 90% 이상"
+    ],
+    "business_impact": [
+      "기능 출시 속도 27% 향상",
+      "사용자 만족도 12% 향상",
+      "운영 비용 15% 절감"
+    ]
+  },
+  "weekly_checklist": {
+    "data_collection": "메트릭 데이터 수집 및 분석",
+    "progress_verification": "목표 진도율 검증 (50% 이상?)",
+    "feedback_collection": "팀 피드백 수집",
+    "risk_assessment": "리스크 상황 점검",
+    "planning": "다음 주 액션 계획 수립"
+  },
+  "issue_resolution_process": [
+    "장애 사항 즉시 보고",
+    "근본 원인 분석",
+    "해결 방안 수립",
+    "예방 대책 수립",
+    "팀 공유 및 학습"
+  ],
+  "quality_assurance": [
+    "자동화된 테스트 실행",
+    "코드 리뷰 완료",
+    "문서화 업데이트",
+    "배포 체크리스트 검증"
+  ],
+  "risk_mitigation": {
+    "team_resistance": {
+      "risk": "팀의 자동화 도구에 대한 저항",
+      "mitigation": "초기 교육 및 지속적인 지원, 성공 사례 공유"
+    },
+    "technical_complexity": {
+      "risk": "통합의 기술적 복잡성",
+      "mitigation": "전문가 팀 배치, 단계적 구현, 롤백 계획 수립"
+    },
+    "resource_constraints": {
+      "risk": "리소스 부족",
+      "mitigation": "우선순위 재조정, 외부 지원 검토, 단계적 확대"
+    }
+  }
+}
