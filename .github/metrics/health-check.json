@@ -580,5 +580,11 @@
     "status": "healthy",
     "response_time_ms": 123,
     "checked_at": "2026-03-08T08:50:57.276Z"
+  },
+  {
+    "service": "github-api",
+    "status": "healthy",
+    "response_time_ms": 218,
+    "checked_at": "2026-03-08T09:15:41.661Z"
   }
 ]
