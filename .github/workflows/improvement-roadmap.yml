@@ -24,19 +24,19 @@ jobs:
 
       - name: Generate Roadmap Visualization
         run: |
-          python3 << 'EOF'
-          import json
-          from datetime import datetime, timedelta
-          from pathlib import Path
-          
-          # 분석 데이터 로드
-          analysis_file = Path('.github/metrics/improvement-analysis.json')
-          if not analysis_file.exists():
-              print("⚠️ Analysis file not found")
-              exit(0)
-          
-          with open(analysis_file, 'r', encoding='utf-8') as f:
-              data = json.load(f)
+          python3 -c "
+import json
+from datetime import datetime, timedelta
+from pathlib import Path
+
+# 분석 데이터 로드
+analysis_file = Path('.github/metrics/improvement-analysis.json')
+if not analysis_file.exists():
+    print('⚠️ Analysis file not found')
+    exit(0)
+
+with open(analysis_file, 'r', encoding='utf-8') as f:
+    data = json.load(f)
           
           # Roadmap Markdown 생성
           roadmap = """# 🗓️ 개선 계획 Roadmap (2026년 3-4월)
@@ -361,8 +361,8 @@ jobs:
           with open(roadmap_json_file, 'w', encoding='utf-8') as f:
               json.dump(roadmap_json, f, indent=2, ensure_ascii=False)
           
-          print("✓ Roadmap JSON generated")
-          EOF
+          print('✓ Roadmap JSON generated')
+"
 
       - name: Commit improvements
         run: |

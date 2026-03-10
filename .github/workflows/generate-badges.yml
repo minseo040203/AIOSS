@@ -157,57 +157,56 @@ jobs:
 
       - name: Update README Badges
         run: |
-          python3 << 'EOF'
-          import json
-          import re
-          from pathlib import Path
-          
-          badges_file = Path('.github/metrics/badges.json')
-          readme_file = Path('README.md')
-          
-          if not badges_file.exists():
-              print('No badges file found')
-              exit(0)
-          
-          # 뱃지 JSON 로드
-          with open(badges_file, 'r', encoding='utf-8') as f:
-              badges = json.load(f)
-          
-          # README 읽기
-          with open(readme_file, 'r', encoding='utf-8', errors='ignore') as f:
-              readme = f.read()
-          
-          # 뱃지 마크다운 생성
-          badge_md = """## 📊 실시간 메트릭 뱃지
-          
-          ![Lead Time](https://img.shields.io/badge/Lead%20Time-{lead_time}-green)
-          ![Deployments](https://img.shields.io/badge/Deployments%2Fweek-{deployment}-green)
-          ![MTTR](https://img.shields.io/badge/MTTR-{mttr}-green)
-          ![CFR](https://img.shields.io/badge/CFR-{cfr}-green)
-          """.format(
-              lead_time=badges['lead_time']['message'],
-              deployment=badges['deployment_frequency']['message'],
-              mttr=badges['mttr']['message'],
-              cfr=badges['cfr']['message']
-          )
-          
-          # README에 뱃지 섹션이 없으면 추가
-          if '## 📊 실시간 메트릭 뱃지' not in readme:
-              # 프로젝트 개요 섹션 다음에 추가
-              pattern = r'(## 📋 프로젝트 개요\n.*?\n\n)'
-              readme = re.sub(pattern, lambda m: m.group(0) + badge_md + '\n', readme)
-          else:
-              # 기존 뱃지 섹션 업데이트
-              pattern = r'## 📊 실시간 메트릭 뱃지\n\n![Lead Time].*?!\[CFR\].*?\n'
-              readme = re.sub(pattern, badge_md, readme, flags=re.DOTALL)
-          
-          # README 저장
-          with open(readme_file, 'w', encoding='utf-8') as f:
-              f.write(readme)
-          
-          print('✓ README badges updated')
-          EOF
-        shell: python
+          python3 -c "
+import json
+import re
+from pathlib import Path
+
+badges_file = Path('.github/metrics/badges.json')
+readme_file = Path('README.md')
+
+if not badges_file.exists():
+    print('No badges file found')
+    exit(0)
+
+# 뱃지 JSON 로드
+with open(badges_file, 'r', encoding='utf-8') as f:
+    badges = json.load(f)
+
+# README 읽기
+with open(readme_file, 'r', encoding='utf-8', errors='ignore') as f:
+    readme = f.read()
+
+# 뱃지 마크다운 생성
+badge_md = '''## 📊 실시간 메트릭 뱃지
+
+![Lead Time](https://img.shields.io/badge/Lead%20Time-{lead_time}-green)
+![Deployments](https://img.shields.io/badge/Deployments%2Fweek-{deployment}-green)
+![MTTR](https://img.shields.io/badge/MTTR-{mttr}-green)
+![CFR](https://img.shields.io/badge/CFR-{cfr}-green)
+'''.format(
+    lead_time=badges['lead_time']['message'],
+    deployment=badges['deployment_frequency']['message'],
+    mttr=badges['mttr']['message'],
+    cfr=badges['cfr']['message']
+)
+
+# README에 뱃지 섹션이 없으면 추가
+if '## 📊 실시간 메트릭 뱃지' not in readme:
+    # 프로젝트 개요 섹션 다음에 추가
+    pattern = r'(## 📋 프로젝트 개요\n.*?\n\n)'
+    readme = re.sub(pattern, lambda m: m.group(0) + badge_md + '\n', readme)
+else:
+    # 기존 뱃지 섹션 업데이트
+    pattern = r'## 📊 실시간 메트릭 뱃지\n\n!\[Lead Time\].*?!\[CFR\].*?\n'
+    readme = re.sub(pattern, badge_md, readme, flags=re.DOTALL)
+
+# README 저장
+with open(readme_file, 'w', encoding='utf-8') as f:
+    f.write(readme)
+
+print('✓ README badges updated')
+"
 
       - name: Commit badge updates
         run: |
