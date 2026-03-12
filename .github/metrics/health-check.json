@@ -1510,5 +1510,11 @@
     "status": "healthy",
     "response_time_ms": 161,
     "checked_at": "2026-03-12T20:04:08.366Z"
+  },
+  {
+    "service": "github-api",
+    "status": "unhealthy",
+    "response_time_ms": 219,
+    "checked_at": "2026-03-12T20:49:09.080Z"
   }
 ]
