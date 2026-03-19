@@ -14,13 +14,15 @@
   },
   {
     "service": "github-api",
-    "status": "ongoing",
+    "status": "recovered",
     "detected_at": "2026-03-19T17:35:24.891Z",
     "failure_rate": "100.00",
     "checks": {
       "healthy": 0,
       "unhealthy": 1
     },
-    "id": 1773941724994
+    "id": 1773941724994,
+    "recovered_at": "2026-03-19T20:45:15.749Z",
+    "recovery_time_minutes": 190
   }
 ]
