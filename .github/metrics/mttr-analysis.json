@@ -1,12 +1,12 @@
 {
-  "timestamp": "2026-03-19T16:33:13.487Z",
+  "timestamp": "2026-03-19T17:35:25.097Z",
   "mttr_minutes": 117,
   "mttr_hours": "1.95",
   "min_recovery": 117,
   "max_recovery": 117,
-  "total_incidents": 1,
+  "total_incidents": 2,
   "recovered_incidents": 1,
-  "recovery_rate": "100.00",
+  "recovery_rate": "50.00",
   "last_30_days": {
     "incidents": 1,
     "avg_recovery_time": 117
