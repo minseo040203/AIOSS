@@ -1,6 +1,6 @@
 # Lead Time Report
 
-Generated: 2026-03-16T10:06:40.112Z
+Generated: 2026-03-23T10:03:40.149Z
 Deployments: 20
 
 ## Summary
