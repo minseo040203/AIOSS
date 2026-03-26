@@ -4060,5 +4060,11 @@
     "status": "healthy",
     "response_time_ms": 273,
     "checked_at": "2026-03-26T05:45:43.912Z"
+  },
+  {
+    "service": "github-api",
+    "status": "unhealthy",
+    "response_time_ms": 91,
+    "checked_at": "2026-03-26T06:48:57.825Z"
   }
 ]
