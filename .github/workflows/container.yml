@@ -1,0 +1,24 @@
+name: Container Execution Environment
+
+on: push
+
+jobs:
+  container-job:
+    runs-on: ubuntu-latest
+
+    container:
+      image: node:18
+      env:
+        NODE_ENV: production
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check Node version
+        run: node --version
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
