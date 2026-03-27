@@ -1,8 +1,0 @@
-blank_issues_enabled: false
-contact_links:
-  - name: 프로젝트 문서
-    url: https://github.com/minseo040203/AIOSS/wiki
-    about: 프로젝트에 대한 상세 문서를 확인하세요
-  - name: 토론 포럼
-    url: https://github.com/minseo040203/AIOSS/discussions
-    about: 커뮤니티와 소통하세요
