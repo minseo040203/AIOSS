@@ -1,0 +1,14 @@
+{
+  "name": "hello-ci-pipeline",
+  "version": "1.0.0",
+  "description": "Basic CI Pipeline Project",
+  "main": "index.js",
+  "scripts": {
+    "lint": "echo 'Linting...'",
+    "test": "echo 'Running tests...'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {}
+}

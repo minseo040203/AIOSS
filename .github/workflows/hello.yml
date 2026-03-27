@@ -1,0 +1,12 @@
+name: Hello World
+
+# 드리거: push 이벤트 시
+on: push
+
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Say Hello
+        run: echo "Hello, GitHub Actions!"
