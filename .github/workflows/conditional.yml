@@ -1,0 +1,28 @@
+name: Conditional Execution
+
+on: [push, pull_request]
+
+jobs:
+  conditional:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run only on main
+        if: github.ref == 'refs/heads/main'
+        run: echo "Main branch"
+
+      - name: Run only on PR
+        if: github.event_name == 'pull_request'
+        run: echo "Pull Request"
+
+      - name: Run on success
+        if: success()
+        run: echo "Previous steps succeeded"
+
+      - name: Run on failure
+        if: failure()
+        run: echo "Something failed"
+
+      - name: Always run
+        if: always()
+        run: echo "This always runs"
