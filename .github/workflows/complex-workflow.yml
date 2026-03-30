@@ -13,12 +13,13 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm install
 
       - name: Build project
-        run: npm run build || echo "build complete"
+        run: npm run build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
@@ -37,18 +38,13 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: build-output
-          path: dist/
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm install
 
       - name: Run tests
-        run: npm run test 2>/dev/null || echo "Tests completed"
+        run: npm run test
 
   deploy:
     needs: [build, test]
@@ -58,11 +54,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          name: build-output
-          path: dist/
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
 
       - name: Deploy to production
         run: echo "Deploying to production..."

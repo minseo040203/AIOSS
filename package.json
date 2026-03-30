@@ -4,6 +4,7 @@
   "description": "Basic CI Pipeline Project",
   "main": "index.js",
   "scripts": {
+    "build": "mkdir -p dist && echo 'Build complete' > dist/index.js",
     "lint": "echo 'Linting...'",
     "test": "echo 'Running tests...'"
   },
